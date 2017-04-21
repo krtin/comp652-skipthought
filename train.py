@@ -10,7 +10,7 @@ from helpers import configuration
 from helpers import skip_thoughts_model
 
 inputfiles = "bookcorpus/train-?????-of-00100"
-savedir = "train"
+savedir = "trained"
 
 
 tf.logging.set_verbosity(tf.logging.INFO)

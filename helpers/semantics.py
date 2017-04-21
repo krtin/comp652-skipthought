@@ -1,6 +1,4 @@
-'''
-Evaluation code for the SICK dataset (SemEval 2014 Task 1)
-'''
+
 import numpy as np
 import os.path
 from sklearn.metrics import mean_squared_error as mse
@@ -14,22 +12,19 @@ from keras.optimizers import Adam
 
 
 def evaluate(encoder, seed=1234, evaltest=False, loc='./data/'):
-    """
-    Run experiment
-    """
-    print 'Preparing data...'
+    print 'Load data...'
     train, dev, test, scores = load_data(loc)
     train[0], train[1], scores[0] = shuffle(train[0], train[1], scores[0], random_state=seed)
     
-    print 'Computing training skipthoughts...'
+    print 'Get sentence embeddings for training...'
     trainA = encoder.encode(train[0], verbose=False, use_eos=True)
     trainB = encoder.encode(train[1], verbose=False, use_eos=True)
     
-    print 'Computing development skipthoughts...'
+    print 'get sentence embedding for dev...'
     devA = encoder.encode(dev[0], verbose=False, use_eos=True)
     devB = encoder.encode(dev[1], verbose=False, use_eos=True)
 
-    print 'Computing feature combinations...'
+    print 'concatenate features...'
     trainF = np.c_[np.abs(trainA - trainB), trainA * trainB]
     devF = np.c_[np.abs(devA - devB), devA * devB]
 
@@ -44,14 +39,14 @@ def evaluate(encoder, seed=1234, evaltest=False, loc='./data/'):
     bestlrmodel = train_model(lrmodel, trainF, trainY, devF, devY, scores[1])
 
     if evaltest:
-        print 'Computing test skipthoughts...'
+        print 'sentence embeddings for test set...'
         testA = encoder.encode(test[0], verbose=False, use_eos=True)
         testB = encoder.encode(test[1], verbose=False, use_eos=True)
 
-        print 'Computing feature combinations...'
+        print 'features concatenation'
         testF = np.c_[np.abs(testA - testB), testA * testB]
 
-        print 'Evaluating...'
+        print 'Evaluating'
         r = np.arange(1,6)
         yhat = np.dot(bestlrmodel.predict_proba(testF, verbose=2), r)
         pr = pearsonr(yhat, scores[2])[0]
@@ -65,9 +60,6 @@ def evaluate(encoder, seed=1234, evaltest=False, loc='./data/'):
 
 
 def prepare_model(ninputs=9600, nclass=5):
-    """
-    Set up and compile the model architecture (Logistic regression)
-    """
     lrmodel = Sequential()
     lrmodel.add(Dense(input_dim=ninputs, output_dim=nclass))
     lrmodel.add(Activation('softmax'))
@@ -76,9 +68,6 @@ def prepare_model(ninputs=9600, nclass=5):
 
 
 def train_model(lrmodel, X, Y, devX, devY, devscores):
-    """
-    Train model, using pearsonr on dev for early stopping
-    """
     done = False
     best = -1.0
     r = np.arange(1,6)
@@ -103,9 +92,6 @@ def train_model(lrmodel, X, Y, devX, devY, devscores):
     
 
 def encode_labels(labels, nclass=5):
-    """
-    Label encoding from Tree LSTM paper (Tai, Socher, Manning)
-    """
     Y = np.zeros((len(labels), nclass)).astype('float32')
     for j, y in enumerate(labels):
         for i in range(nclass):
@@ -117,9 +103,6 @@ def encode_labels(labels, nclass=5):
 
 
 def load_data(loc='./data/'):
-    """
-    Load the SICK semantic-relatedness dataset
-    """
     trainA, trainB, devA, devB, testA, testB = [],[],[],[],[],[]
     trainS, devS, testS = [],[],[]
 

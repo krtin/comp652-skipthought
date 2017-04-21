@@ -12,45 +12,42 @@ from sklearn.metrics import f1_score as f1
 
 
 def evaluate(encoder, k=10, seed=3456, evalcv=True, evaltest=False, loc='./data/'):
-    """
-    Run experiment
-    k: number of CV folds
-    test: whether to evaluate on test set
-    """
-    print 'Preparing data...'
+    print 'Load Data...'
     traintext, testtext, labels = load_data(loc)
 
-    print 'Computing training skipthoughts...'
+    print 'Convert to sentence embeddings...'
+
     trainA = encoder.encode(traintext[0], verbose=False)
     trainB = encoder.encode(traintext[1], verbose=False)
 
     if evalcv:
-        print 'Running cross-validation...'
+        print 'Perform cross-validation...'
         C = eval_kfold(trainA, trainB, traintext, labels[0], shuffle=True, k=10, seed=3456)
-    print("Size of sentences: ",trainA.shape)
+    #print("Size of sentences: ",trainA.shape)
     if evaltest:
         if not evalcv:
-            C = 4    # Best parameter found from CV (combine-skip with use_feats=True)
+            C = 4    
 
-        print 'Computing testing skipthoughts...'
+        print 'Convert test data to skipthought vectors...'
         testA = encoder.encode(testtext[0], verbose=False)
         testB = encoder.encode(testtext[1], verbose=False)
 
+	#u.v and u-v features concatenation 
         train_features = np.c_[np.abs(trainA - trainB), trainA * trainB]
         test_features = np.c_[np.abs(testA - testB), testA * testB]
 
-        print 'Evaluating...'
+        print 'Evaluate logistic regression...'
         clf = LogisticRegression(C=C)
+	#fit model
         clf.fit(train_features, labels[0])
-        yhat = clf.predict(test_features)
+        #get prediction
+	ypred = clf.predict(test_features)
         print 'Test accuracy: ' + str(clf.score(test_features, labels[1]))
-        print 'Test F1: ' + str(f1(labels[1], yhat))
+        #get f1 score, label 1 is true value
+	print 'Test F1: ' + str(f1(labels[1], ypred))
 
 
 def load_data(loc='./data/'):
-    """
-    Load MSRP dataset
-    """
     trainloc = os.path.join(loc, 'msr_paraphrase_train.txt')
     testloc = os.path.join(loc, 'msr_paraphrase_test.txt')
 
@@ -87,9 +84,6 @@ def is_number(s):
 
 
 def eval_kfold(A, B, train, labels, shuffle=True, k=10, seed=3456):
-    """
-    Perform k-fold cross validation
-    """
     # features
     labels = np.array(labels)
     features = np.c_[np.abs(A - B), A * B]
